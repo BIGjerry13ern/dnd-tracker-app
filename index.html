@@ -2,96 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IMPROPER 3D | Third Person</title>
+    <title>IMPROPER | The Abyss</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
-        #ui { position: absolute; top: 20px; left: 20px; color: #d4af37; pointer-events: none; }
-        #death-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: #8b0000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        :root { --bg: #050505; --panel: #111; --gold: #d4af37; --blood: #8b0000; --text: #ccc; }
+        body { background: var(--bg); color: var(--text); font-family: 'Verdana', sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+        h1 { color: var(--gold); border-bottom: 2px solid var(--blood); padding-bottom: 10px; text-align: center; text-transform: uppercase; }
+        .layout { display: grid; grid-template-columns: 200px 1fr; gap: 20px; }
+        .sidebar { background: var(--panel); padding: 15px; border: 1px solid #333; height: fit-content; }
+        .content { background: var(--panel); padding: 20px; border: 1px solid #333; }
+        .stat-bar { background: #000; padding: 8px; margin: 5px 0; color: var(--gold); border: 1px solid #222; font-size: 0.9em; }
+        .btn-main { width: 100%; padding: 12px; background: #1a1a1a; color: white; border: 1px solid #444; cursor: pointer; margin-top: 5px; }
     </style>
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="ui">
-        <h1 id="hp-display">HP: 100</h1>
-        <p>Use W, A, S, D to Move | Click to Attack</p>
+<h1>IMPROPER</h1>
+<div id="game-screen" class="layout">
+    <div class="sidebar">
+        <div id="p-stats"></div>
     </div>
-
-    <div id="death-screen">
-        <h1>YOU PERISHED</h1>
-        <button onclick="location.reload()" style="padding:20px; cursor:pointer;">RESTART RUN</button>
+    <div class="content">
+        <h2 id="hour-display">Hour 1/48</h2>
+        <div id="story-text"></div>
+        <div id="choice-container"></div>
     </div>
+</div>
 
-    <script>
-        // --- ENGINE SETUP ---
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        // --- WORLD ---
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(100, 100),
-            new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide })
-        );
-        floor.rotation.x = Math.PI / 2;
-        scene.add(floor);
+    const firebaseConfig = {
+        apiKey: "AIzaSyCqOxn-sFCCOa1koOaDwQumiD8I0h70G-c",
+        authDomain: "d-and-d-campaign-hub.firebaseapp.com",
+        databaseURL: "https://d-and-d-campaign-hub-default-rtdb.firebaseio.com",
+        projectId: "d-and-d-campaign-hub",
+        storageBucket: "d-and-d-campaign-hub.firebasestorage.app",
+        messagingSenderId: "953951157532",
+        appId: "1:953951157532:web:5ec60c759ad8229ea6ced9",
+        measurementId: "G-10KMRSH0HV"
+    };
 
-        // --- PLAYER (The 3rd Person Character) ---
-        const player = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 2, 1),
-            new THREE.MeshBasicMaterial({ color: 0xd4af37 })
-        );
-        player.position.y = 1;
-        scene.add(player);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        // --- CAMERA FOLLOW SYSTEM ---
-        camera.position.set(0, 5, 10);
-        camera.lookAt(player.position);
+    // Initial state
+    let player = { hp: 100, gold: 0, hour: 0 };
 
-        // --- CONTROLS & PHYSICS ---
-        const keys = { w: false, a: false, s: false, d: false };
-        document.addEventListener('keydown', (e) => keys[e.key] = true);
-        document.addEventListener('keyup', (e) => keys[e.key] = false);
+    async function saveGame() {
+        await set(ref(db, 'saveData'), player);
+    }
 
-        let hp = 100;
-        let isDead = false;
+    async function loadGame() {
+        const snapshot = await get(ref(db, 'saveData'));
+        if (snapshot.exists()) player = snapshot.val();
+        render();
+    }
 
-        function update() {
-            if (isDead) return;
+    function render() {
+        document.getElementById('p-stats').innerHTML = `HP: ${player.hp}<br>Gold: ${player.gold}`;
+        document.getElementById('hour-display').innerText = `Hour ${player.hour + 1}/48`;
+    }
 
-            // Movement Logic
-            const speed = 0.15;
-            if (keys.w) player.position.z -= speed;
-            if (keys.s) player.position.z += speed;
-            if (keys.a) player.position.x -= speed;
-            if (keys.d) player.position.x += speed;
+    // Logic to increment hour and save
+    window.advance = async () => {
+        player.hour++;
+        player.gold += 10;
+        await saveGame();
+        render();
+    };
 
-            // Camera Follow
-            camera.position.x = player.position.x;
-            camera.position.z = player.position.z + 10;
-
-            // Damage Loop (Example: Falling off map or getting hit)
-            if (hp <= 0) {
-                isDead = true;
-                document.getElementById('death-screen').style.display = 'flex';
-            }
-            
-            renderer.render(scene, camera);
-            requestAnimationFrame(update);
-        }
-
-        // --- START GAME ---
-        update();
-        
-        // Window Resize
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
-    </script>
+    loadGame();
+</script>
 </body>
 </html>
