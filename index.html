@@ -1,76 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>D&D Tracker - RPG Engine</title>
+    <title>Improper</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #1e1e1e; color: #eee; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; background: #2a2a2a; padding: 10px; border-radius: 5px; }
-        button { padding: 8px 15px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; margin-top: 5px; }
-        button:hover { background-color: #45a049; }
-        #start-btn { margin-top: 20px; padding: 12px 20px; font-weight: bold; width: 100%; font-size: 16px; }
-        input, select { padding: 8px; border-radius: 4px; border: 1px solid #555; background: #333; color: white; }
-        
-        /* New Game UI Styles */
-        .choice-btn { display: block; width: 100%; text-align: left; margin-bottom: 10px; background-color: #3b5998; padding: 12px; }
-        .choice-btn:hover { background-color: #2d4373; }
-        #player-hud { background: #333; padding: 15px; border-radius: 5px; margin-top: 20px; border-top: 3px solid #4CAF50; }
+        body { font-family: 'Verdana', sans-serif; background: #0c0c0c; color: #ddd; padding: 10px; max-width: 600px; margin: auto; }
+        h1 { color: #ffd700; text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .tab-bar { display: flex; gap: 5px; margin-bottom: 20px; }
+        .btn { background: #1a1a1a; border: 1px solid #444; color: #aaa; padding: 10px; cursor: pointer; flex: 1; }
+        .btn:hover { background: #333; color: #ffd700; border-color: #ffd700; }
+        .panel { display: none; background: #111; padding: 15px; border: 1px solid #222; }
+        .active { display: block; }
+        .item-card { border: 1px solid #444; padding: 10px; margin: 5px 0; background: #1a1a1a; }
+        #log { height: 100px; overflow-y: auto; background: #050505; padding: 10px; font-size: 12px; border: 1px solid #222; }
     </style>
 </head>
 <body>
 
-    <!-- ==========================================
-         SECTION 1: CHARACTER CREATOR
-         ========================================== -->
-    <div id="creator-section">
-        <h1>Create Your Character</h1>
-        
-        <label>Character Name:</label><br>
-        <input type="text" id="charName" placeholder="Enter name" style="margin-bottom: 15px; width: 95%;"><br>
+    <h1>IMPROPER</h1>
 
-        <label>Choose Class:</label><br>
-        <select id="charClass" style="margin-bottom: 20px; width: 100%;">
-            <option value="Fighter">Fighter</option>
-            <option value="Wizard">Wizard</option>
-            <option value="Rogue">Rogue</option>
-            <option value="Cleric">Cleric</option>
-        </select>
-
-        <h3>Allocate Stats (Max 24)</h3>
-        <p>Points Remaining: <strong id="pointsRemaining">24</strong></p>
-
-        <div id="stats-container"></div>
-
-        <button id="start-btn" onclick="saveCharacter()">Begin Adventure</button>
-        <p id="status-msg"></p>
+    <div class="tab-bar">
+        <button class="btn" onclick="showTab('adventure')">Dungeons</button>
+        <button class="btn" onclick="showTab('character')">Character</button>
+        <button class="btn" onclick="showTab('shop')">Shop</button>
     </div>
 
-    <!-- ==========================================
-         SECTION 2: THE GAME ENGINE UI
-         ========================================== -->
-    <div id="game-section" style="display: none;">
-        <h1>The Campaign</h1>
-        
-        <!-- Story Text -->
-        <h2 id="story-text" style="line-height: 1.4;">Loading story...</h2>
-        
-        <!-- The 5 Options will generate here -->
-        <div id="choices-container" style="margin-top: 20px;"></div>
-
-        <!-- The Player's Stats HUD -->
-        <div id="player-hud">
-            <h3>Your Stats</h3>
-            <p id="hud-stats">Loading stats...</p>
+    <!-- DUNGEON TAB -->
+    <div id="adventure" class="panel active">
+        <h2>Dungeons</h2>
+        <p>Energy: <span id="p-energy">100/100</span> | Gold: <span id="p-gold">0</span></p>
+        <div id="dungeon-list">
+            <div class="item-card">
+                <strong>Crypt of Despair</strong><br>Cost: 10 Energy<br>
+                <button onclick="runDungeon(10, 50, 'Crypt')">Enter</button>
+            </div>
+            <div class="item-card">
+                <strong>Demon's Lair</strong><br>Cost: 25 Energy<br>
+                <button onclick="runDungeon(25, 200, 'Lair')">Enter</button>
+            </div>
         </div>
+        <div id="log" style="margin-top:15px;">Ready for battle...</div>
     </div>
 
-    <!-- ==========================================
-         JAVASCRIPT ENGINE
-         ========================================== -->
+    <!-- CHARACTER TAB -->
+    <div id="character" class="panel">
+        <h2>Gear</h2>
+        <div id="equipped-gear">Weapon: None</div>
+        <h3>Stats</h3>
+        <p>Lvl: <span id="p-lvl">1</span> | XP: <span id="p-xp">0</span></p>
+    </div>
+
+    <!-- SHOP TAB -->
+    <div id="shop" class="panel">
+        <h2>Premium Shop</h2>
+        <p>Gems: <span id="p-gems">0</span></p>
+        <button onclick="buyGems()">Buy 100 Gems ($0.99)</button>
+        <button onclick="buyEnergy()">Buy 50 Energy (10 Gems)</button>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        // We added setDoc, getDoc, doc, and updateDoc to handle the game loop!
-        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
             authDomain: "dnd-tracker-backend.firebaseapp.com",
@@ -80,156 +71,57 @@
             appId: "1:359211619885:web:4203ebba0232d2e1e9caa4",
             measurementId: "G-BW0755NDVW"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Global Game Variables
-        const stats = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
-        const statValues = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
-        let points = 24;
-        
-        let currentPlayerId = "";
-        let currentPlayerStats = {};
+        let p = { energy: 100, gold: 0, gems: 0, lvl: 1, xp: 0, weapon: "Fists", loot: [] };
+        let pId = localStorage.getItem('dnd-player-id');
 
-        // --- PART 1: UI RENDERERS ---
-        function renderStats() {
-            const container = document.getElementById('stats-container');
-            container.innerHTML = ''; 
-            stats.forEach(stat => {
-                const row = document.createElement('div');
-                row.className = 'stat-row';
-                row.innerHTML = `
-                    <span><strong>${stat}:</strong> ${statValues[stat]}</span>
-                    <div>
-                        <button onclick="changeStat('${stat}', -1)">-</button>
-                        <button onclick="changeStat('${stat}', 1)">+</button>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-            document.getElementById('pointsRemaining').innerText = points;
-        }
-
-        window.changeStat = function(stat, amount) {
-            if (amount === -1 && statValues[stat] === 0) return;
-            if (amount === 1 && points === 0) return;
-            statValues[stat] += amount;
-            points -= amount;
-            renderStats();
+        window.runDungeon = async function(cost, rewardGold, name) {
+            if (p.energy < cost) { log("Need more energy!"); return; }
+            p.energy -= cost;
+            p.gold += rewardGold;
+            p.xp += (cost * 2);
+            log(`Cleared ${name}! Earned ${rewardGold} Gold.`);
+            updateUI();
         };
 
-        function updateHUD() {
-            document.getElementById('hud-stats').innerHTML = `
-                STR: ${currentPlayerStats.STR} | DEX: ${currentPlayerStats.DEX} | CON: ${currentPlayerStats.CON} <br>
-                INT: ${currentPlayerStats.INT} | WIS: ${currentPlayerStats.WIS} | CHA: ${currentPlayerStats.CHA}
-            `;
-        }
+        window.buyGems = function() {
+            log("Opening Payment Gateway...");
+            p.gems += 100; 
+            updateUI();
+        };
 
-        // --- PART 2: DATABASE SETUP (THE DM SCRIPT) ---
-        async function autoGenerateStoryDatabase() {
-            // This writes the story automatically so you don't have to use the Firebase Console!
-            console.log("Checking if story exists...");
-            
-            // Node 1
-            await setDoc(doc(db, "StoryNodes", "1"), {
-                text: "You step out of the tavern into the dark, misty streets. A shadowy figure darts across the alleyway carrying a glowing object. What do you do?",
-                choices: [
-                    { text: "Chase them down! (+2 STR)", effect: "STR", val: 2, next: "2" },
-                    { text: "Sneak around the flank. (+2 DEX)", effect: "DEX", val: 2, next: "2" },
-                    { text: "Stand your ground and brace. (+2 CON)", effect: "CON", val: 2, next: "2" },
-                    { text: "Recall local gang symbols. (+2 INT)", effect: "INT", val: 2, next: "2" },
-                    { text: "Call out to them peacefully. (+2 CHA)", effect: "CHA", val: 2, next: "2" }
-                ]
-            });
-
-            // Node 2 (Demo End)
-            await setDoc(doc(db, "StoryNodes", "2"), {
-                text: "You corner the figure! It's a terrified goblin holding an amulet. (This is the end of the Phase 3 demo. Time to build Phase 4!)",
-                choices: [
-                    { text: "Restart Demo", effect: "STR", val: 0, next: "1" }
-                ]
-            });
-        }
-
-        // --- PART 3: GAME LOOP ---
-        window.saveCharacter = async function() {
-            const name = document.getElementById('charName').value;
-            if (name.trim() === "" || points > 0) {
-                document.getElementById('status-msg').innerText = "Finish your name and stats!";
-                return;
-            }
-
-            document.getElementById('status-msg').innerText = "Generating World...";
-
-            try {
-                // 1. Ensure the story exists in the database
-                await autoGenerateStoryDatabase();
-
-                // 2. Save the player
-                currentPlayerStats = { ...statValues };
-                const docRef = await addDoc(collection(db, "Players"), {
-                    name: name,
-                    class: document.getElementById('charClass').value,
-                    level: 1,
-                    stats: currentPlayerStats,
-                    currentNode: "1"
-                });
-                currentPlayerId = docRef.id;
-
-                // 3. Swap UI to the Game Screen
-                document.getElementById('creator-section').style.display = 'none';
-                document.getElementById('game-section').style.display = 'block';
-                
-                // 4. Load the first piece of the story
-                loadStoryNode("1");
-                updateHUD();
-
-            } catch (error) {
-                console.error("Error: ", error);
+        window.buyEnergy = function() {
+            if (p.gems >= 10) {
+                p.gems -= 10;
+                p.energy = 100;
+                log("Energy Restored!");
+                updateUI();
+            } else {
+                log("Not enough Gems!");
             }
         };
 
-        async function loadStoryNode(nodeId) {
-            const nodeRef = doc(db, "StoryNodes", nodeId);
-            const nodeSnap = await getDoc(nodeRef);
-
-            if (nodeSnap.exists()) {
-                const nodeData = nodeSnap.data();
-                document.getElementById('story-text').innerText = nodeData.text;
-                
-                const choicesContainer = document.getElementById('choices-container');
-                choicesContainer.innerHTML = ''; // Clear old buttons
-
-                // Generate the 5 choice buttons
-                nodeData.choices.forEach(choice => {
-                    const btn = document.createElement('button');
-                    btn.className = 'choice-btn';
-                    btn.innerText = choice.text;
-                    btn.onclick = () => makeChoice(choice.effect, choice.val, choice.next);
-                    choicesContainer.appendChild(btn);
-                });
-            }
+        function log(msg) {
+            const l = document.getElementById('log');
+            l.innerHTML = msg + "<br>" + l.innerHTML;
         }
 
-        window.makeChoice = async function(statEffect, valAmount, nextNodeId) {
-            // 1. Update the player's local stats
-            currentPlayerStats[statEffect] += valAmount;
-            updateHUD();
+        function updateUI() {
+            document.getElementById('p-energy').innerText = p.energy + "/100";
+            document.getElementById('p-gold').innerText = p.gold;
+            document.getElementById('p-gems').innerText = p.gems;
+            document.getElementById('p-lvl').innerText = p.lvl;
+            document.getElementById('equipped-gear').innerText = "Weapon: " + p.weapon;
+        }
 
-            // 2. Save the new stats and the new node to Firebase
-            const playerRef = doc(db, "Players", currentPlayerId);
-            await updateDoc(playerRef, {
-                stats: currentPlayerStats,
-                currentNode: nextNodeId
-            });
-
-            // 3. Load the next part of the story
-            loadStoryNode(nextNodeId);
+        window.showTab = (id) => {
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
         };
 
-        // Initialize Creator UI
-        renderStats();
+        updateUI();
     </script>
 </body>
 </html>
