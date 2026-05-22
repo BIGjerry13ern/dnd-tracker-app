@@ -1,50 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>D&D Tracker</title>
+    <title>D&D Tracker - Character Creation</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        button { padding: 5px 15px; cursor: pointer; }
+        #start-btn { margin-top: 20px; padding: 10px 20px; font-weight: bold; width: 100%; }
+    </style>
 </head>
 <body>
-    <h1>D&D Tracker</h1>
-    <p id="status">Loading data...</p>
-    <div id="campaign-display"></div>
+    <h1>Create Your Character</h1>
+    
+    <label>Character Name:</label><br>
+    <input type="text" id="charName" placeholder="Enter name" style="margin-bottom: 15px; width: 100%;"><br>
+
+    <label>Choose Class:</label><br>
+    <select id="charClass" style="margin-bottom: 20px; width: 100%;">
+        <option value="Barbarian">Barbarian</option>
+        <option value="Bard">Bard</option>
+        <option value="Cleric">Cleric</option>
+        <option value="Druid">Druid</option>
+        <option value="Fighter">Fighter</option>
+        <option value="Monk">Monk</option>
+        <option value="Paladin">Paladin</option>
+        <option value="Ranger">Ranger</option>
+        <option value="Rogue">Rogue</option>
+        <option value="Sorcerer">Sorcerer</option>
+        <option value="Warlock">Warlock</option>
+        <option value="Wizard">Wizard</option>
+    </select>
+
+    <h3>Allocate Stats</h3>
+    <p>Points Remaining: <strong id="pointsRemaining">24</strong></p>
+
+    <div id="stats-container">
+        <!-- Stats will be injected here by JavaScript -->
+    </div>
+
+    <button id="start-btn" onclick="saveCharacter()">Begin Adventure</button>
+
+    <p id="status-msg"></p>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        // We will add the Firebase saving logic in the next step. 
+        // For now, we are building the Point-Buy Engine.
+        
+        const stats = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+        const statValues = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
+        let points = 24;
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
-            authDomain: "dnd-tracker-backend.firebaseapp.com",
-            projectId: "dnd-tracker-backend",
-            storageBucket: "dnd-tracker-backend.firebasestorage.app",
-            messagingSenderId: "359211619885",
-            appId: "1:359211619885:web:4203ebba0232d2e1e9caa4",
-            measurementId: "G-BW0755NDVW"
-        };
+        function renderStats() {
+            const container = document.getElementById('stats-container');
+            container.innerHTML = ''; // Clear it out
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        async function fetchCampaign() {
-            try {
-                // Trying to access: Campaigns -> R1ZT7VavyTTMBzjGIi1h
-                const docRef = doc(db, "Campaigns", "R1ZT7VavyTTMBzjGIi1h");
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    document.getElementById("status").innerText = "Data Loaded!";
-                    // If 'name' is empty, this will show a specific warning
-                    const data = docSnap.data();
-                    document.getElementById("campaign-display").innerText = "Campaign: " + (data.name || "Field 'name' not found in database");
-                } else {
-                    document.getElementById("status").innerText = "Doc not found at path: Campaigns/R1ZT7VavyTTMBzjGIi1h";
-                }
-            } catch (error) {
-                document.getElementById("status").innerText = "Error: " + error.message;
-            }
+            stats.forEach(stat => {
+                const row = document.createElement('div');
+                row.className = 'stat-row';
+                
+                row.innerHTML = `
+                    <span><strong>${stat}:</strong> <span id="val-${stat}">${statValues[stat]}</span></span>
+                    <div>
+                        <button onclick="changeStat('${stat}', -1)">-</button>
+                        <button onclick="changeStat('${stat}', 1)">+</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+            document.getElementById('pointsRemaining').innerText = points;
         }
 
-        fetchCampaign();
+        window.changeStat = function(stat, amount) {
+            // Prevent dropping below 0
+            if (amount === -1 && statValues[stat] === 0) return;
+            // Prevent spending points we don't have
+            if (amount === 1 && points === 0) return;
+            // Max 100 per stat (though they only have 24 right now)
+            if (amount === 1 && statValues[stat] >= 100) return;
+
+            statValues[stat] += amount;
+            points -= amount;
+            renderStats();
+        };
+
+        window.saveCharacter = function() {
+            const name = document.getElementById('charName').value;
+            const charClass = document.getElementById('charClass').value;
+
+            if (name.trim() === "") {
+                document.getElementById('status-msg').innerText = "Please enter a name!";
+                return;
+            }
+            if (points > 0) {
+                document.getElementById('status-msg').innerText = "Please spend all 24 points before starting!";
+                return;
+            }
+
+            // We will connect this to Firebase in the next step.
+            document.getElementById('status-msg').innerText = `Ready to save: ${name} the ${charClass}!`;
+            console.log("Ready to push to Firebase:", { name, charClass, stats: statValues });
+        };
+
+        // Run once to draw the buttons
+        renderStats();
     </script>
 </body>
 </html>
