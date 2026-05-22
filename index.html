@@ -27,18 +27,20 @@
 
         async function fetchCampaign() {
             try {
-                const docRef = doc(db, "campaigns", "R1ZT7VavyTTMBzjGIi1h");
+                // Trying to access: Campaigns -> R1ZT7VavyTTMBzjGIi1h
+                const docRef = doc(db, "Campaigns", "R1ZT7VavyTTMBzjGIi1h");
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
                     document.getElementById("status").innerText = "Data Loaded!";
-                    document.getElementById("Campaign-display").innerText = "Campaign: " + docSnap.data().name;
+                    // If 'name' is empty, this will show a specific warning
+                    const data = docSnap.data();
+                    document.getElementById("campaign-display").innerText = "Campaign: " + (data.name || "Field 'name' not found in database");
                 } else {
-                    document.getElementById("status").innerText = "No such document!";
+                    document.getElementById("status").innerText = "Doc not found at path: Campaigns/R1ZT7VavyTTMBzjGIi1h";
                 }
             } catch (error) {
-                document.getElementById("status").innerText = "Error loading data.";
-                console.error(error);
+                document.getElementById("status").innerText = "Error: " + error.message;
             }
         }
 
