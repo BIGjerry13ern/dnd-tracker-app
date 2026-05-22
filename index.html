@@ -2,133 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IMPROPER | The 48-Hour Abyss</title>
+    <title>IMPROPER 3D | Third Person</title>
     <style>
-        :root { --bg: #050505; --gold: #d4af37; --blood: #8b0000; --panel: #111; }
-        body { background: var(--bg); color: #ccc; font-family: 'Courier New', monospace; padding: 20px; max-width: 800px; margin: auto; }
-        h1 { color: var(--gold); text-align: center; border-bottom: 2px solid var(--blood); padding-bottom: 10px; text-transform: uppercase; }
-        .ui-box { background: var(--panel); padding: 25px; border: 1px solid #333; margin-top: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; }
-        .card { padding: 15px; background: #1a1a1a; border: 1px solid #444; cursor: pointer; transition: 0.2s; }
-        .card:hover { border-color: var(--gold); background: #222; }
-        .stats-display { display: flex; justify-content: space-between; background: #000; padding: 10px; border: 1px solid var(--gold); margin-bottom: 15px; color: var(--gold); }
-        .btn-main { padding: 15px; background: #1a1a1a; color: white; border: 1px solid #444; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-main:hover { border-color: var(--gold); }
-        #log { height: 120px; overflow-y: scroll; background: #000; padding: 10px; border: 1px solid #222; font-size: 0.8em; color: #777; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+        #ui { position: absolute; top: 20px; left: 20px; color: #d4af37; pointer-events: none; }
+        #death-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: #8b0000; display: none; flex-direction: column; justify-content: center; align-items: center; }
     </style>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <h1>IMPROPER</h1>
-
-    <!-- SETUP SCREEN -->
-    <div id="setup-screen" class="ui-box">
-        <h2 id="setup-title">Initialize Protocol</h2>
-        <div id="setup-options" class="grid"></div>
+    <div id="ui">
+        <h1 id="hp-display">HP: 100</h1>
+        <p>Use W, A, S, D to Move | Click to Attack</p>
     </div>
 
-    <!-- GAME SCREEN -->
-    <div id="game-screen" class="ui-box" style="display:none;">
-        <div class="stats-display" id="stats-header"></div>
-        <div id="story-text" style="margin: 20px 0; font-style:italic; font-size: 1.2em;"></div>
-        <div id="choice-container" class="grid"></div>
-        <h3>Event Log</h3>
-        <div id="log"></div>
+    <div id="death-screen">
+        <h1>YOU PERISHED</h1>
+        <button onclick="location.reload()" style="padding:20px; cursor:pointer;">RESTART RUN</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <script>
+        // --- ENGINE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-        // CONFIG: Replace with your Firebase settings
-        const firebaseConfig = { apiKey: "AIza...", authDomain: "dnd-tracker.firebaseapp.com", projectId: "dnd-tracker", storageBucket: "dnd-tracker.appspot.com", appId: "1:..." };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // --- WORLD ---
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(100, 100),
+            new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide })
+        );
+        floor.rotation.x = Math.PI / 2;
+        scene.add(floor);
 
-        // --- CLASSES ---
-        const CLASSES = {
-            "Warrior": { hp: 150, str: 15, agi: 5, int: 5, sta: 10 }, "Rogue": { hp: 90, str: 8, agi: 18, int: 8, sta: 6 },
-            "Mage": { hp: 70, str: 3, agi: 7, int: 20, sta: 5 }, "Berserker": { hp: 120, str: 22, agi: 8, int: 2, sta: 12 },
-            "Paladin": { hp: 140, str: 10, agi: 4, int: 10, sta: 15 }, "Necromancer": { hp: 85, str: 6, agi: 6, int: 18, sta: 8 },
-            "Cleric": { hp: 110, str: 7, agi: 6, int: 12, sta: 15 }, "Ranger": { hp: 100, str: 9, agi: 15, int: 8, sta: 8 },
-            "Assassin": { hp: 80, str: 10, agi: 22, int: 6, sta: 6 }, "Warlord": { hp: 130, str: 12, agi: 10, int: 10, sta: 12 }
-        };
+        // --- PLAYER (The 3rd Person Character) ---
+        const player = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 2, 1),
+            new THREE.MeshBasicMaterial({ color: 0xd4af37 })
+        );
+        player.position.y = 1;
+        scene.add(player);
 
-        // --- STORY ENGINE (48 Nodes) ---
-        const STORY_NODES = Array.from({length: 48}, (_, i) => ({
-            id: i + 1,
-            text: `Hour ${i + 1}: The descent deepens. The shadows are hungry. ${i > 24 ? "The Abyss is collapsing." : "You are holding the line."}`,
-            choices: [
-                { text: "Fight", next: i + 1, risk: 0.1 + (i * 0.01), req: 'str', val: 5 + Math.floor(i/2) },
-                { text: "Scout", next: i + 1, risk: 0.05, req: 'agi', val: 5 + Math.floor(i/2) }
-            ]
-        }));
+        // --- CAMERA FOLLOW SYSTEM ---
+        camera.position.set(0, 5, 10);
+        camera.lookAt(player.position);
 
-        class GameEngine {
-            constructor() {
-                this.p = { mode: '', class: '', hp: 0, str: 0, agi: 0, int: 0, sta: 0, lvl: 1, hour: 0 };
-                this.stage = 'mode';
+        // --- CONTROLS & PHYSICS ---
+        const keys = { w: false, a: false, s: false, d: false };
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        let hp = 100;
+        let isDead = false;
+
+        function update() {
+            if (isDead) return;
+
+            // Movement Logic
+            const speed = 0.15;
+            if (keys.w) player.position.z -= speed;
+            if (keys.s) player.position.z += speed;
+            if (keys.a) player.position.x -= speed;
+            if (keys.d) player.position.x += speed;
+
+            // Camera Follow
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z + 10;
+
+            // Damage Loop (Example: Falling off map or getting hit)
+            if (hp <= 0) {
+                isDead = true;
+                document.getElementById('death-screen').style.display = 'flex';
             }
-
-            renderSetup() {
-                const options = document.getElementById('setup-options');
-                if (this.stage === 'mode') {
-                    ['Hardcore', 'Softcore'].forEach(m => {
-                        const b = document.createElement('button');
-                        b.className = 'card'; b.innerText = m;
-                        b.onclick = () => { this.p.mode = m; this.stage = 'class'; this.renderSetup(); };
-                        options.appendChild(b);
-                    });
-                } else {
-                    Object.keys(CLASSES).forEach(c => {
-                        const b = document.createElement('button');
-                        b.className = 'card'; b.innerHTML = `<strong>${c}</strong>`;
-                        b.onclick = () => { this.initGame(c); };
-                        options.appendChild(b);
-                    });
-                }
-            }
-
-            initGame(className) {
-                const s = CLASSES[className];
-                this.p = { ...this.p, ...s, class: className, hour: 0 };
-                document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('game-screen').style.display = 'block';
-                this.updateUI();
-            }
-
-            updateUI() {
-                document.getElementById('stats-header').innerHTML = `<span>Class: ${this.p.class}</span><span>HP: ${this.p.hp}</span><span>STR: ${this.p.str}</span>`;
-                const node = STORY_NODES[this.p.hour];
-                document.getElementById('story-text').innerText = node.text;
-                const cont = document.getElementById('choice-container'); cont.innerHTML = '';
-                node.choices.forEach(c => {
-                    const b = document.createElement('button'); b.className = 'btn-main';
-                    b.innerText = `${c.text} [Req: ${c.req.toUpperCase()} ${c.val}]`;
-                    b.onclick = () => this.process(c); cont.appendChild(b);
-                });
-            }
-
-            process(c) {
-                if (this.p[c.req] < c.val || Math.random() < c.risk) {
-                    this.log("Damage taken!"); this.p.hp -= 20;
-                    if(this.p.hp <= 0) {
-                        this.log("You perished.");
-                        if(this.p.mode === 'Hardcore') location.reload();
-                        else { this.p.hp = 100; this.updateUI(); }
-                    }
-                } else {
-                    this.p.hour++;
-                    if(this.p.hour >= 48) { alert("YOU WON! LEVEL 75 REACHED."); location.reload(); }
-                    this.updateUI();
-                }
-            }
-
-            log(m) { const l = document.getElementById('log'); l.innerHTML = `> ${m}<br>${l.innerHTML}`; }
+            
+            renderer.render(scene, camera);
+            requestAnimationFrame(update);
         }
 
-        window.game = new GameEngine();
-        window.game.renderSetup();
+        // --- START GAME ---
+        update();
+        
+        // Window Resize
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
     </script>
 </body>
 </html>
