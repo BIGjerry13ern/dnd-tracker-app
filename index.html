@@ -1,203 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>D&D Tracker - Character Creation</title>
+    <title>D&D Tracker - RPG Engine</title>
     <style>
-        /* Import RPG-style fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Lora:ital,wght@0,400;0,700;1,400&display=swap');
-
-        body { 
-            background-color: #121212; /* Dark, easy on the eyes */
-            color: #e0e0e0; 
-            font-family: 'Lora', serif; 
-            display: flex; 
-            justify-content: center; 
-            padding: 20px;
-            margin: 0;
-        }
-
-        /* The main character sheet container */
-        .sheet-container {
-            background-color: #1e1e1e;
-            border: 2px solid #8b6d3b; /* Brass/Gold border */
-            border-radius: 8px;
-            padding: 30px;
-            max-width: 450px;
-            width: 100%;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-        }
-
-        h1, h3 {
-            font-family: 'Cinzel', serif;
-            color: #d4af37; /* Gold */
-            text-align: center;
-            margin-top: 0;
-            letter-spacing: 1px;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        label {
-            font-weight: bold;
-            color: #bca05f;
-            font-family: 'Cinzel', serif;
-            font-size: 0.9em;
-            letter-spacing: 1px;
-        }
-
-        input[type="text"], select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 5px;
-            margin-bottom: 20px;
-            background-color: #121212;
-            border: 1px solid #555;
-            color: #d4af37;
-            border-radius: 4px;
-            font-family: 'Lora', serif;
-            font-size: 1em;
-            box-sizing: border-box;
-            transition: 0.3s;
-        }
-
-        input[type="text"]:focus, select:focus {
-            outline: none;
-            border-color: #d4af37;
-            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
-        }
-
-        .points-display {
-            text-align: center;
-            font-size: 1.1em;
-            margin-bottom: 20px;
-            background-color: #151515;
-            padding: 12px;
-            border-radius: 4px;
-            border: 1px solid #333;
-        }
-
-        #pointsRemaining {
-            color: #d4af37;
-            font-size: 1.4em;
-            font-weight: bold;
-        }
-
-        /* Stat Allocation Rows */
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #252525;
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border-left: 4px solid #8b6d3b;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        .stat-name {
-            font-weight: bold;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 2px;
-            color: #ccc;
-        }
-
-        .stat-value {
-            font-size: 1.3em;
-            margin-left: 15px;
-            color: #d4af37;
-            font-weight: bold;
-        }
-
-        .btn-group button {
-            background-color: #333;
-            color: #d4af37;
-            border: 1px solid #555;
-            border-radius: 4px;
-            width: 35px;
-            height: 35px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn-group button:hover {
-            background-color: #d4af37;
-            color: #121212;
-        }
-
-        #start-btn {
-            width: 100%;
-            padding: 15px;
-            margin-top: 25px;
-            background-color: #8b6d3b;
-            color: #121212;
-            border: none;
-            border-radius: 4px;
-            font-size: 20px;
-            font-family: 'Cinzel', serif;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        #start-btn:hover {
-            background-color: #d4af37;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
-            transform: translateY(-2px);
-        }
-
-        #status-msg {
-            text-align: center;
-            margin-top: 20px;
-            font-style: italic;
-            color: #ff8b8b; /* Soft red for errors */
-        }
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #1e1e1e; color: #eee; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; background: #2a2a2a; padding: 10px; border-radius: 5px; }
+        button { padding: 8px 15px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; margin-top: 5px; }
+        button:hover { background-color: #45a049; }
+        #start-btn { margin-top: 20px; padding: 12px 20px; font-weight: bold; width: 100%; font-size: 16px; }
+        input, select { padding: 8px; border-radius: 4px; border: 1px solid #555; background: #333; color: white; }
+        
+        /* New Game UI Styles */
+        .choice-btn { display: block; width: 100%; text-align: left; margin-bottom: 10px; background-color: #3b5998; padding: 12px; }
+        .choice-btn:hover { background-color: #2d4373; }
+        #player-hud { background: #333; padding: 15px; border-radius: 5px; margin-top: 20px; border-top: 3px solid #4CAF50; }
     </style>
 </head>
 <body>
 
-    <div class="sheet-container">
-        <h1>Create Character</h1>
+    <!-- ==========================================
+         SECTION 1: CHARACTER CREATOR
+         ========================================== -->
+    <div id="creator-section">
+        <h1>Create Your Character</h1>
         
-        <label>Character Name</label><br>
-        <input type="text" id="charName" placeholder="Enter thy name, hero..."><br>
+        <label>Character Name:</label><br>
+        <input type="text" id="charName" placeholder="Enter name" style="margin-bottom: 15px; width: 95%;"><br>
 
-        <label>Choose Class</label><br>
-        <select id="charClass">
-            <option value="Barbarian">Barbarian</option>
-            <option value="Bard">Bard</option>
-            <option value="Cleric">Cleric</option>
-            <option value="Druid">Druid</option>
+        <label>Choose Class:</label><br>
+        <select id="charClass" style="margin-bottom: 20px; width: 100%;">
             <option value="Fighter">Fighter</option>
-            <option value="Monk">Monk</option>
-            <option value="Paladin">Paladin</option>
-            <option value="Ranger">Ranger</option>
-            <option value="Rogue">Rogue</option>
-            <option value="Sorcerer">Sorcerer</option>
-            <option value="Warlock">Warlock</option>
             <option value="Wizard">Wizard</option>
+            <option value="Rogue">Rogue</option>
+            <option value="Cleric">Cleric</option>
         </select>
 
-        <h3>Attributes</h3>
-        <div class="points-display">
-            Points Remaining: <span id="pointsRemaining">24</span>
-        </div>
+        <h3>Allocate Stats (Max 24)</h3>
+        <p>Points Remaining: <strong id="pointsRemaining">24</strong></p>
 
-        <div id="stats-container">
-            <!-- Stats injected here -->
-        </div>
+        <div id="stats-container"></div>
 
         <button id="start-btn" onclick="saveCharacter()">Begin Adventure</button>
-
         <p id="status-msg"></p>
     </div>
 
+    <!-- ==========================================
+         SECTION 2: THE GAME ENGINE UI
+         ========================================== -->
+    <div id="game-section" style="display: none;">
+        <h1>The Campaign</h1>
+        
+        <!-- Story Text -->
+        <h2 id="story-text" style="line-height: 1.4;">Loading story...</h2>
+        
+        <!-- The 5 Options will generate here -->
+        <div id="choices-container" style="margin-top: 20px;"></div>
+
+        <!-- The Player's Stats HUD -->
+        <div id="player-hud">
+            <h3>Your Stats</h3>
+            <p id="hud-stats">Loading stats...</p>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT ENGINE
+         ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        // We added setDoc, getDoc, doc, and updateDoc to handle the game loop!
+        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
@@ -212,23 +84,24 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Global Game Variables
         const stats = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
         const statValues = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
         let points = 24;
+        
+        let currentPlayerId = "";
+        let currentPlayerStats = {};
 
+        // --- PART 1: UI RENDERERS ---
         function renderStats() {
             const container = document.getElementById('stats-container');
             container.innerHTML = ''; 
-
             stats.forEach(stat => {
                 const row = document.createElement('div');
                 row.className = 'stat-row';
                 row.innerHTML = `
+                    <span><strong>${stat}:</strong> ${statValues[stat]}</span>
                     <div>
-                        <span class="stat-name">${stat}</span>
-                        <span class="stat-value" id="val-${stat}">${statValues[stat]}</span>
-                    </div>
-                    <div class="btn-group">
                         <button onclick="changeStat('${stat}', -1)">-</button>
                         <button onclick="changeStat('${stat}', 1)">+</button>
                     </div>
@@ -241,51 +114,121 @@
         window.changeStat = function(stat, amount) {
             if (amount === -1 && statValues[stat] === 0) return;
             if (amount === 1 && points === 0) return;
-            if (amount === 1 && statValues[stat] >= 100) return;
-
             statValues[stat] += amount;
             points -= amount;
             renderStats();
         };
 
+        function updateHUD() {
+            document.getElementById('hud-stats').innerHTML = `
+                STR: ${currentPlayerStats.STR} | DEX: ${currentPlayerStats.DEX} | CON: ${currentPlayerStats.CON} <br>
+                INT: ${currentPlayerStats.INT} | WIS: ${currentPlayerStats.WIS} | CHA: ${currentPlayerStats.CHA}
+            `;
+        }
+
+        // --- PART 2: DATABASE SETUP (THE DM SCRIPT) ---
+        async function autoGenerateStoryDatabase() {
+            // This writes the story automatically so you don't have to use the Firebase Console!
+            console.log("Checking if story exists...");
+            
+            // Node 1
+            await setDoc(doc(db, "StoryNodes", "1"), {
+                text: "You step out of the tavern into the dark, misty streets. A shadowy figure darts across the alleyway carrying a glowing object. What do you do?",
+                choices: [
+                    { text: "Chase them down! (+2 STR)", effect: "STR", val: 2, next: "2" },
+                    { text: "Sneak around the flank. (+2 DEX)", effect: "DEX", val: 2, next: "2" },
+                    { text: "Stand your ground and brace. (+2 CON)", effect: "CON", val: 2, next: "2" },
+                    { text: "Recall local gang symbols. (+2 INT)", effect: "INT", val: 2, next: "2" },
+                    { text: "Call out to them peacefully. (+2 CHA)", effect: "CHA", val: 2, next: "2" }
+                ]
+            });
+
+            // Node 2 (Demo End)
+            await setDoc(doc(db, "StoryNodes", "2"), {
+                text: "You corner the figure! It's a terrified goblin holding an amulet. (This is the end of the Phase 3 demo. Time to build Phase 4!)",
+                choices: [
+                    { text: "Restart Demo", effect: "STR", val: 0, next: "1" }
+                ]
+            });
+        }
+
+        // --- PART 3: GAME LOOP ---
         window.saveCharacter = async function() {
             const name = document.getElementById('charName').value;
-            const charClass = document.getElementById('charClass').value;
-            const statusMsg = document.getElementById('status-msg');
-
-            if (name.trim() === "") {
-                statusMsg.style.color = "#ff8b8b";
-                statusMsg.innerText = "Please enter a name!";
-                return;
-            }
-            if (points > 0) {
-                statusMsg.style.color = "#ff8b8b";
-                statusMsg.innerText = "You must spend all 24 points before venturing forth!";
+            if (name.trim() === "" || points > 0) {
+                document.getElementById('status-msg').innerText = "Finish your name and stats!";
                 return;
             }
 
-            statusMsg.style.color = "#d4af37";
-            statusMsg.innerText = "Forging your destiny...";
+            document.getElementById('status-msg').innerText = "Generating World...";
 
             try {
+                // 1. Ensure the story exists in the database
+                await autoGenerateStoryDatabase();
+
+                // 2. Save the player
+                currentPlayerStats = { ...statValues };
                 const docRef = await addDoc(collection(db, "Players"), {
                     name: name,
-                    class: charClass,
+                    class: document.getElementById('charClass').value,
                     level: 1,
-                    stats: statValues,
-                    currentNode: 1
+                    stats: currentPlayerStats,
+                    currentNode: "1"
                 });
+                currentPlayerId = docRef.id;
+
+                // 3. Swap UI to the Game Screen
+                document.getElementById('creator-section').style.display = 'none';
+                document.getElementById('game-section').style.display = 'block';
                 
-                statusMsg.style.color = "#a8d5a2"; // Soft green
-                statusMsg.innerText = "Character Saved! Your journey begins...";
-                
+                // 4. Load the first piece of the story
+                loadStoryNode("1");
+                updateHUD();
+
             } catch (error) {
-                console.error("Error adding document: ", error);
-                statusMsg.style.color = "#ff8b8b";
-                statusMsg.innerText = "Error saving character: " + error.message;
+                console.error("Error: ", error);
             }
         };
 
+        async function loadStoryNode(nodeId) {
+            const nodeRef = doc(db, "StoryNodes", nodeId);
+            const nodeSnap = await getDoc(nodeRef);
+
+            if (nodeSnap.exists()) {
+                const nodeData = nodeSnap.data();
+                document.getElementById('story-text').innerText = nodeData.text;
+                
+                const choicesContainer = document.getElementById('choices-container');
+                choicesContainer.innerHTML = ''; // Clear old buttons
+
+                // Generate the 5 choice buttons
+                nodeData.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.innerText = choice.text;
+                    btn.onclick = () => makeChoice(choice.effect, choice.val, choice.next);
+                    choicesContainer.appendChild(btn);
+                });
+            }
+        }
+
+        window.makeChoice = async function(statEffect, valAmount, nextNodeId) {
+            // 1. Update the player's local stats
+            currentPlayerStats[statEffect] += valAmount;
+            updateHUD();
+
+            // 2. Save the new stats and the new node to Firebase
+            const playerRef = doc(db, "Players", currentPlayerId);
+            await updateDoc(playerRef, {
+                stats: currentPlayerStats,
+                currentNode: nextNodeId
+            });
+
+            // 3. Load the next part of the story
+            loadStoryNode(nextNodeId);
+        };
+
+        // Initialize Creator UI
         renderStats();
     </script>
 </body>
