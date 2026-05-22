@@ -3,15 +3,16 @@
 <head>
     <title>Improper</title>
     <style>
-        body { font-family: 'Verdana', sans-serif; background: #0c0c0c; color: #ddd; padding: 10px; max-width: 600px; margin: auto; }
-        h1 { color: #ffd700; text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        body { font-family: 'Verdana', sans-serif; background: #0c0c0c; color: #eee; padding: 15px; max-width: 600px; margin: auto; }
+        h1 { color: #ffd700; text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
         .tab-bar { display: flex; gap: 5px; margin-bottom: 20px; }
         .btn { background: #1a1a1a; border: 1px solid #444; color: #aaa; padding: 10px; cursor: pointer; flex: 1; }
         .btn:hover { background: #333; color: #ffd700; border-color: #ffd700; }
         .panel { display: none; background: #111; padding: 15px; border: 1px solid #222; }
         .active { display: block; }
-        .item-card { border: 1px solid #444; padding: 10px; margin: 5px 0; background: #1a1a1a; }
-        #log { height: 100px; overflow-y: auto; background: #050505; padding: 10px; font-size: 12px; border: 1px solid #222; }
+        .item-card { border: 1px solid #444; padding: 10px; margin: 5px 0; background: #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
+        #log { height: 150px; overflow-y: auto; background: #050505; padding: 10px; font-size: 13px; border: 1px solid #222; margin-top: 10px; }
+        #story-box { background: #1a1a1a; padding: 15px; border-left: 4px solid #ffd700; margin-bottom: 15px; font-style: italic; }
     </style>
 </head>
 <body>
@@ -19,37 +20,34 @@
     <h1>IMPROPER</h1>
 
     <div class="tab-bar">
-        <button class="btn" onclick="showTab('adventure')">Dungeons</button>
+        <button class="btn" onclick="showTab('adventure')">Adventure</button>
         <button class="btn" onclick="showTab('character')">Character</button>
+        <button class="btn" onclick="showTab('inventory')">Loot</button>
         <button class="btn" onclick="showTab('shop')">Shop</button>
     </div>
 
-    <!-- DUNGEON TAB -->
     <div id="adventure" class="panel active">
-        <h2>Dungeons</h2>
-        <p>Energy: <span id="p-energy">100/100</span> | Gold: <span id="p-gold">0</span></p>
+        <div id="story-box">Loading mission briefing...</div>
+        <p>Hour: <span id="p-hour">0</span>/48 | Energy: <span id="p-energy">100/100</span></p>
         <div id="dungeon-list">
-            <div class="item-card">
-                <strong>Crypt of Despair</strong><br>Cost: 10 Energy<br>
-                <button onclick="runDungeon(10, 50, 'Crypt')">Enter</button>
-            </div>
-            <div class="item-card">
-                <strong>Demon's Lair</strong><br>Cost: 25 Energy<br>
-                <button onclick="runDungeon(25, 200, 'Lair')">Enter</button>
-            </div>
+            <div class="item-card"><span><strong>Crypt (10 Energy)</strong></span><button onclick="runDungeon(10, 50, 'Crypt')">Enter</button></div>
+            <div class="item-card"><span><strong>Lair (25 Energy)</strong></span><button onclick="runDungeon(25, 200, 'Lair')">Enter</button></div>
         </div>
-        <div id="log" style="margin-top:15px;">Ready for battle...</div>
+        <div id="log">Welcome to Improper. The countdown has begun.</div>
     </div>
 
-    <!-- CHARACTER TAB -->
     <div id="character" class="panel">
-        <h2>Gear</h2>
-        <div id="equipped-gear">Weapon: None</div>
-        <h3>Stats</h3>
-        <p>Lvl: <span id="p-lvl">1</span> | XP: <span id="p-xp">0</span></p>
+        <h2>Character Sheet</h2>
+        <p>Lvl: <span id="p-lvl">1</span>/75 | XP: <span id="p-xp">0</span></p>
+        <div style="background: #222; height: 15px; width: 100%;"><div id="xp-bar" style="background: #ffd700; height: 100%; width: 0%;"></div></div>
+        <p><strong>Weapon:</strong> <span id="p-weapon">Fists</span></p>
     </div>
 
-    <!-- SHOP TAB -->
+    <div id="inventory" class="panel">
+        <h2>Legendary Loot</h2>
+        <div id="loot-list"></div>
+    </div>
+
     <div id="shop" class="panel">
         <h2>Premium Shop</h2>
         <p>Gems: <span id="p-gems">0</span></p>
@@ -59,9 +57,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // Firebase Config
+        // --- REPLACE WITH YOUR CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
             authDomain: "dnd-tracker-backend.firebaseapp.com",
@@ -74,54 +72,126 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let p = { energy: 100, gold: 0, gems: 0, lvl: 1, xp: 0, weapon: "Fists", loot: [] };
+        // --- STORY CONTENT ---
+        const STORY = [
+            "Hour 1: The breach is open. Shadows creep into the light.",
+            "Hour 2: You find your first blade. Steel feels cold, but necessary.",
+            "Hour 3: The local militia is slaughtered. You are the only one left.",
+            "Hour 4: The first rift is active. Demons swarm the crypt entrance.",
+            "Hour 5: A mysterious whisper guides you to the Lair.",
+            "Hour 6: You feel a strange power growing... you are not human anymore.",
+            "Hour 7: The sky turns crimson. The siege has begun.",
+            "Hour 8: You find ancient scrolls. The prophecy of the Abyss is true.",
+            "Hour 9: You are exhausted, but the loot keeps you fighting.",
+            "Hour 10: The Crypts are deep. You've killed hundreds, but thousands remain.",
+            "Hour 11: A shadow figure watches you from the alley. Friend or foe?",
+            "Hour 12: Act I ends. You have held the line, but the town is gone.",
+            "Hour 13: Act II. The counter-attack is failing.",
+            "Hour 14: You find a shield. It belonged to the fallen general.",
+            "Hour 15: The demons are using portals. They are everywhere.",
+            "Hour 16: You feel the corruption spreading to your heart.",
+            "Hour 17: Loot is scarce. The high-tier weapons are rare.",
+            "Hour 18: You face a Gatekeeper. You barely survive.",
+            "Hour 19: The city is a ruin. Only you survive.",
+            "Hour 20: Hunger and fatigue set in. You push through.",
+            "Hour 21: You discover a secret laboratory in the Lair.",
+            "Hour 22: Forbidden alchemy. Is this how they made the portal?",
+            "Hour 23: The Boss of the Lair awaits you.",
+            "Hour 24: MIDPOINT. Halfway to oblivion. You are stronger, but tired.",
+            "Hour 25: Act III. You decide to go on the offensive.",
+            "Hour 26: Into the heart of the Abyss. Darkness consumes all.",
+            "Hour 27: Your gear is legendary now, but so are the enemies.",
+            "Hour 28: You fight entities that have no names.",
+            "Hour 29: Memories of your past fade. Only the grind remains.",
+            "Hour 30: You reach the Abyssal Plains.",
+            "Hour 31: The air is toxic. You need better gear.",
+            "Hour 32: The demons fear you now. You are the predator.",
+            "Hour 33: A massive rift opens. The Source is close.",
+            "Hour 34: You find the final piece of the General's set.",
+            "Hour 35: The corruption is nearly total. You have 13 hours left.",
+            "Hour 36: Act III concludes. The final gate stands before you.",
+            "Hour 37: Act IV. The final Descent.",
+            "Hour 38: The Abyss is not a place; it is a living thing.",
+            "Hour 39: You fight for your life. Every second counts.",
+            "Hour 40: You find the Source's chamber.",
+            "Hour 41: The boss is not a monster. It is a reflection of you.",
+            "Hour 42: You have 6 hours to change fate.",
+            "Hour 43: The gear you have gathered is the only thing keeping you alive.",
+            "Hour 44: Final stand. Monsters fall by the dozens.",
+            "Hour 45: You pierce the Source's veil.",
+            "Hour 46: The end is near. The light flickers.",
+            "Hour 47: You prepare for the ultimate blow.",
+            "Hour 48: The final hour. Your destiny is decided."
+        ];
+
+        let p = { name: "Hero", energy: 100, gold: 0, gems: 0, lvl: 1, xp: 0, weapon: "Fists", inventory: [], hoursPassed: 0 };
         let pId = localStorage.getItem('dnd-player-id');
 
-        window.runDungeon = async function(cost, rewardGold, name) {
-            if (p.energy < cost) { log("Need more energy!"); return; }
-            p.energy -= cost;
-            p.gold += rewardGold;
-            p.xp += (cost * 2);
-            log(`Cleared ${name}! Earned ${rewardGold} Gold.`);
-            updateUI();
-        };
-
-        window.buyGems = function() {
-            log("Opening Payment Gateway...");
-            p.gems += 100; 
-            updateUI();
-        };
-
-        window.buyEnergy = function() {
-            if (p.gems >= 10) {
-                p.gems -= 10;
-                p.energy = 100;
-                log("Energy Restored!");
-                updateUI();
+        async function init() {
+            if(!pId) {
+                const name = prompt("Name your hero:");
+                p.name = name;
+                const docRef = await setDoc(doc(collection(db, "Players")), p);
+                localStorage.setItem('dnd-player-id', docRef.id);
+                pId = docRef.id;
             } else {
-                log("Not enough Gems!");
+                const snap = await getDoc(doc(db, "Players", pId));
+                if(snap.exists()) p = snap.data();
             }
+            updateUI();
+        }
+
+        window.runDungeon = async function(cost, gold, name) {
+            if(p.energy < cost) { log("Low energy!"); return; }
+            if(p.hoursPassed >= 48) { log("Campaign complete!"); return; }
+            
+            p.energy -= cost;
+            p.gold += gold;
+            p.xp += (cost * 5);
+            p.hoursPassed += 1;
+            
+            const roll = Math.random();
+            if(roll > 0.7) {
+                const item = { name: "Ancient Blade", rarity: "Magic" };
+                p.inventory.push(item);
+                log("FOUND: " + item.name);
+            }
+
+            let needed = Math.floor(100 * Math.pow(1.15, p.lvl - 1));
+            while(p.xp >= needed && p.lvl < 75) {
+                p.xp -= needed;
+                p.lvl++;
+                needed = Math.floor(100 * Math.pow(1.15, p.lvl - 1));
+                log("LEVEL UP! Level " + p.lvl);
+            }
+
+            updateUI();
+            await save();
         };
 
-        function log(msg) {
-            const l = document.getElementById('log');
-            l.innerHTML = msg + "<br>" + l.innerHTML;
-        }
+        async function save() { await updateDoc(doc(db, "Players", pId), p); }
 
         function updateUI() {
+            document.getElementById('p-hour').innerText = p.hoursPassed;
+            document.getElementById('story-box').innerText = STORY[p.hoursPassed] || "The Abyss is silent.";
             document.getElementById('p-energy').innerText = p.energy + "/100";
             document.getElementById('p-gold').innerText = p.gold;
-            document.getElementById('p-gems').innerText = p.gems;
             document.getElementById('p-lvl').innerText = p.lvl;
-            document.getElementById('equipped-gear').innerText = "Weapon: " + p.weapon;
+            document.getElementById('xp-bar').style.width = (p.xp / Math.floor(100 * Math.pow(1.15, p.lvl - 1)) * 100) + "%";
+            document.getElementById('p-weapon').innerText = p.weapon;
+            
+            const list = document.getElementById('loot-list');
+            list.innerHTML = p.inventory.map(i => `<div class="item-card">${i.name} <button onclick="equip('${i.name}')">Equip</button></div>`).join('');
         }
 
-        window.showTab = (id) => {
-            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
-        };
+        window.equip = (name) => { p.weapon = name; updateUI(); save(); };
+        window.buyGems = () => { p.gems += 100; updateUI(); save(); };
+        window.buyEnergy = () => { if(p.gems>=10) {p.gems-=10; p.energy=100; updateUI(); save(); }};
+        window.showTab = (id) => { document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById(id).style.display = 'block'; };
+        function log(m) { document.getElementById('log').innerHTML = m + "<br>" + document.getElementById('log').innerHTML; }
 
-        updateUI();
+        setInterval(() => { if(p.energy < 100) { p.energy++; updateUI(); } }, 5000);
+        init();
     </script>
 </body>
 </html>
