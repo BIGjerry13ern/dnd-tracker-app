@@ -5,11 +5,12 @@
 </head>
 <body>
     <h1>D&D Tracker</h1>
-    <p id="status">Starting up...</p>
+    <p id="status">Loading data...</p>
+    <div id="campaign-display"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
@@ -23,9 +24,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
-        document.getElementById("status").innerText = "Connected to Firebase!";
-        console.log("Firebase is ready!");
+
+        async function fetchCampaign() {
+            // Replace 'YOUR_DOCUMENT_ID' with the actual ID from your Firebase Console
+            const docRef = doc(db, "campaigns", "YOUR_DOCUMENT_ID");
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                document.getElementById("status").innerText = "Data Loaded!";
+                document.getElementById("campaign-display").innerText = "Campaign: " + docSnap.data().name;
+            } else {
+                document.getElementById("status").innerText = "No such document!";
+            }
+        }
+
+        fetchCampaign();
     </script>
 </body>
 </html>
