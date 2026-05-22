@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>D&D Live Tracker</title>
+    <title>D&D Tracker</title>
 </head>
 <body>
-    <h1>Welcome to the D&D Tracker</h1>
-    <p>The quest begins here!</p>
+    <h1>D&D Tracker</h1>
+    <p id="status">Starting up...</p>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
@@ -21,7 +22,10 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        console.log("Firebase is connected successfully!");
+        const db = getFirestore(app);
+        
+        document.getElementById("status").innerText = "Connected to Firebase!";
+        console.log("Firebase is ready!");
     </script>
 </body>
 </html>
