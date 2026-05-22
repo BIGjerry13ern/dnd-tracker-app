@@ -26,15 +26,19 @@
         const db = getFirestore(app);
 
         async function fetchCampaign() {
-            // Replace 'YOUR_DOCUMENT_ID' with the actual ID from your Firebase Console
-            const docRef = doc(db, "campaigns", "YOUR_DOCUMENT_ID");
-            const docSnap = await getDoc(docRef);
+            try {
+                const docRef = doc(db, "campaigns", "R1ZT7VavyTTMBzjGIi1h");
+                const docSnap = await getDoc(docRef);
 
-            if (docSnap.exists()) {
-                document.getElementById("status").innerText = "Data Loaded!";
-                document.getElementById("campaign-display").innerText = "Campaign: " + docSnap.data().name;
-            } else {
-                document.getElementById("status").innerText = "No such document!";
+                if (docSnap.exists()) {
+                    document.getElementById("status").innerText = "Data Loaded!";
+                    document.getElementById("campaign-display").innerText = "Campaign: " + docSnap.data().name;
+                } else {
+                    document.getElementById("status").innerText = "No such document!";
+                }
+            } catch (error) {
+                document.getElementById("status").innerText = "Error loading data.";
+                console.error(error);
             }
         }
 
