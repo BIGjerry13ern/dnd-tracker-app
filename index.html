@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>D&D Live Tracker</title>
+</head>
+<body>
+    <h1>Welcome to the D&D Tracker</h1>
+    <p>The quest begins here!</p>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
+            authDomain: "dnd-tracker-backend.firebaseapp.com",
+            projectId: "dnd-tracker-backend",
+            storageBucket: "dnd-tracker-backend.firebasestorage.app",
+            messagingSenderId: "359211619885",
+            appId: "1:359211619885:web:4203ebba0232d2e1e9caa4",
+            measurementId: "G-BW0755NDVW"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        console.log("Firebase is connected successfully!");
+    </script>
+</body>
+</html>
