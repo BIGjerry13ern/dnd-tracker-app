@@ -3,64 +3,232 @@
 <head>
     <title>D&D Tracker - Character Creation</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        button { padding: 5px 15px; cursor: pointer; }
-        #start-btn { margin-top: 20px; padding: 10px 20px; font-weight: bold; width: 100%; }
+        /* Import RPG-style fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Lora:ital,wght@0,400;0,700;1,400&display=swap');
+
+        body { 
+            background-color: #121212; /* Dark, easy on the eyes */
+            color: #e0e0e0; 
+            font-family: 'Lora', serif; 
+            display: flex; 
+            justify-content: center; 
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* The main character sheet container */
+        .sheet-container {
+            background-color: #1e1e1e;
+            border: 2px solid #8b6d3b; /* Brass/Gold border */
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+
+        h1, h3 {
+            font-family: 'Cinzel', serif;
+            color: #d4af37; /* Gold */
+            text-align: center;
+            margin-top: 0;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        label {
+            font-weight: bold;
+            color: #bca05f;
+            font-family: 'Cinzel', serif;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            background-color: #121212;
+            border: 1px solid #555;
+            color: #d4af37;
+            border-radius: 4px;
+            font-family: 'Lora', serif;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+
+        .points-display {
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            background-color: #151515;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        #pointsRemaining {
+            color: #d4af37;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+
+        /* Stat Allocation Rows */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #252525;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #8b6d3b;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .stat-name {
+            font-weight: bold;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+            color: #ccc;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            margin-left: 15px;
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        .btn-group button {
+            background-color: #333;
+            color: #d4af37;
+            border: 1px solid #555;
+            border-radius: 4px;
+            width: 35px;
+            height: 35px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-group button:hover {
+            background-color: #d4af37;
+            color: #121212;
+        }
+
+        #start-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 25px;
+            background-color: #8b6d3b;
+            color: #121212;
+            border: none;
+            border-radius: 4px;
+            font-size: 20px;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #start-btn:hover {
+            background-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+            transform: translateY(-2px);
+        }
+
+        #status-msg {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #ff8b8b; /* Soft red for errors */
+        }
     </style>
 </head>
 <body>
-    <h1>Create Your Character</h1>
-    
-    <label>Character Name:</label><br>
-    <input type="text" id="charName" placeholder="Enter name" style="margin-bottom: 15px; width: 100%;"><br>
 
-    <label>Choose Class:</label><br>
-    <select id="charClass" style="margin-bottom: 20px; width: 100%;">
-        <option value="Barbarian">Barbarian</option>
-        <option value="Bard">Bard</option>
-        <option value="Cleric">Cleric</option>
-        <option value="Druid">Druid</option>
-        <option value="Fighter">Fighter</option>
-        <option value="Monk">Monk</option>
-        <option value="Paladin">Paladin</option>
-        <option value="Ranger">Ranger</option>
-        <option value="Rogue">Rogue</option>
-        <option value="Sorcerer">Sorcerer</option>
-        <option value="Warlock">Warlock</option>
-        <option value="Wizard">Wizard</option>
-    </select>
+    <div class="sheet-container">
+        <h1>Create Character</h1>
+        
+        <label>Character Name</label><br>
+        <input type="text" id="charName" placeholder="Enter thy name, hero..."><br>
 
-    <h3>Allocate Stats</h3>
-    <p>Points Remaining: <strong id="pointsRemaining">24</strong></p>
+        <label>Choose Class</label><br>
+        <select id="charClass">
+            <option value="Barbarian">Barbarian</option>
+            <option value="Bard">Bard</option>
+            <option value="Cleric">Cleric</option>
+            <option value="Druid">Druid</option>
+            <option value="Fighter">Fighter</option>
+            <option value="Monk">Monk</option>
+            <option value="Paladin">Paladin</option>
+            <option value="Ranger">Ranger</option>
+            <option value="Rogue">Rogue</option>
+            <option value="Sorcerer">Sorcerer</option>
+            <option value="Warlock">Warlock</option>
+            <option value="Wizard">Wizard</option>
+        </select>
 
-    <div id="stats-container">
-        <!-- Stats will be injected here by JavaScript -->
+        <h3>Attributes</h3>
+        <div class="points-display">
+            Points Remaining: <span id="pointsRemaining">24</span>
+        </div>
+
+        <div id="stats-container">
+            <!-- Stats injected here -->
+        </div>
+
+        <button id="start-btn" onclick="saveCharacter()">Begin Adventure</button>
+
+        <p id="status-msg"></p>
     </div>
 
-    <button id="start-btn" onclick="saveCharacter()">Begin Adventure</button>
-
-    <p id="status-msg"></p>
-
     <script type="module">
-        // We will add the Firebase saving logic in the next step. 
-        // For now, we are building the Point-Buy Engine.
-        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHFqEut_Y4Xq8VWy63I-fgQ5K-WDsNUAY",
+            authDomain: "dnd-tracker-backend.firebaseapp.com",
+            projectId: "dnd-tracker-backend",
+            storageBucket: "dnd-tracker-backend.firebasestorage.app",
+            messagingSenderId: "359211619885",
+            appId: "1:359211619885:web:4203ebba0232d2e1e9caa4",
+            measurementId: "G-BW0755NDVW"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         const stats = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
         const statValues = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
         let points = 24;
 
         function renderStats() {
             const container = document.getElementById('stats-container');
-            container.innerHTML = ''; // Clear it out
+            container.innerHTML = ''; 
 
             stats.forEach(stat => {
                 const row = document.createElement('div');
                 row.className = 'stat-row';
-                
                 row.innerHTML = `
-                    <span><strong>${stat}:</strong> <span id="val-${stat}">${statValues[stat]}</span></span>
                     <div>
+                        <span class="stat-name">${stat}</span>
+                        <span class="stat-value" id="val-${stat}">${statValues[stat]}</span>
+                    </div>
+                    <div class="btn-group">
                         <button onclick="changeStat('${stat}', -1)">-</button>
                         <button onclick="changeStat('${stat}', 1)">+</button>
                     </div>
@@ -71,11 +239,8 @@
         }
 
         window.changeStat = function(stat, amount) {
-            // Prevent dropping below 0
             if (amount === -1 && statValues[stat] === 0) return;
-            // Prevent spending points we don't have
             if (amount === 1 && points === 0) return;
-            // Max 100 per stat (though they only have 24 right now)
             if (amount === 1 && statValues[stat] >= 100) return;
 
             statValues[stat] += amount;
@@ -83,25 +248,44 @@
             renderStats();
         };
 
-        window.saveCharacter = function() {
+        window.saveCharacter = async function() {
             const name = document.getElementById('charName').value;
             const charClass = document.getElementById('charClass').value;
+            const statusMsg = document.getElementById('status-msg');
 
             if (name.trim() === "") {
-                document.getElementById('status-msg').innerText = "Please enter a name!";
+                statusMsg.style.color = "#ff8b8b";
+                statusMsg.innerText = "Please enter a name!";
                 return;
             }
             if (points > 0) {
-                document.getElementById('status-msg').innerText = "Please spend all 24 points before starting!";
+                statusMsg.style.color = "#ff8b8b";
+                statusMsg.innerText = "You must spend all 24 points before venturing forth!";
                 return;
             }
 
-            // We will connect this to Firebase in the next step.
-            document.getElementById('status-msg').innerText = `Ready to save: ${name} the ${charClass}!`;
-            console.log("Ready to push to Firebase:", { name, charClass, stats: statValues });
+            statusMsg.style.color = "#d4af37";
+            statusMsg.innerText = "Forging your destiny...";
+
+            try {
+                const docRef = await addDoc(collection(db, "Players"), {
+                    name: name,
+                    class: charClass,
+                    level: 1,
+                    stats: statValues,
+                    currentNode: 1
+                });
+                
+                statusMsg.style.color = "#a8d5a2"; // Soft green
+                statusMsg.innerText = "Character Saved! Your journey begins...";
+                
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                statusMsg.style.color = "#ff8b8b";
+                statusMsg.innerText = "Error saving character: " + error.message;
+            }
         };
 
-        // Run once to draw the buttons
         renderStats();
     </script>
 </body>
