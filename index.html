@@ -2,35 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IMPROPER | The Abyss</title>
+    <title>IMPROPER | Ultimate ARPG</title>
     <style>
-        :root { --bg: #050505; --panel: #111; --gold: #d4af37; --blood: #8b0000; --text: #ccc; }
-        body { background: var(--bg); color: var(--text); font-family: 'Verdana', sans-serif; padding: 20px; max-width: 900px; margin: auto; }
-        h1 { color: var(--gold); border-bottom: 2px solid var(--blood); padding-bottom: 10px; text-align: center; text-transform: uppercase; }
-        .layout { display: grid; grid-template-columns: 200px 1fr; gap: 20px; }
-        .sidebar { background: var(--panel); padding: 15px; border: 1px solid #333; height: fit-content; }
-        .content { background: var(--panel); padding: 20px; border: 1px solid #333; }
-        .stat-bar { background: #000; padding: 8px; margin: 5px 0; color: var(--gold); border: 1px solid #222; font-size: 0.9em; }
-        .btn-main { width: 100%; padding: 12px; background: #1a1a1a; color: white; border: 1px solid #444; cursor: pointer; margin-top: 5px; }
+        :root { --bg: #050505; --gold: #d4af37; --panel: #111; }
+        body { background: var(--bg); color: #ccc; font-family: 'Verdana', sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+        .grid { display: grid; grid-template-columns: 250px 1fr; gap: 20px; }
+        .panel { background: var(--panel); padding: 20px; border: 1px solid #333; }
+        .xp-container { width: 100%; height: 20px; background: #000; border: 1px solid #444; margin: 10px 0; }
+        #xp-bar { height: 100%; background: var(--gold); width: 0%; }
+        button { background: #1a1a1a; color: white; border: 1px solid #444; padding: 10px; cursor: pointer; width: 100%; margin: 5px 0; }
+        button:hover { border-color: var(--gold); }
     </style>
 </head>
 <body>
 
 <h1>IMPROPER</h1>
-<div id="game-screen" class="layout">
-    <div class="sidebar">
-        <div id="p-stats"></div>
+<div class="grid">
+    <div class="panel">
+        <h3>Character</h3>
+        <div id="stats"></div>
+        <div class="xp-container"><div id="xp-bar"></div></div>
+        <hr>
+        <h3>Shop</h3>
+        <button onclick="shop('health')">Buy Health (50g)</button>
+        <button onclick="buyGems()">Buy 100 Gems ($1.00)</button>
     </div>
-    <div class="content">
-        <h2 id="hour-display">Hour 1/48</h2>
-        <div id="story-text"></div>
-        <div id="choice-container"></div>
+    <div class="panel">
+        <h2 id="hour-txt">Hour 1/48</h2>
+        <p id="story"></p>
+        <div id="choices"></div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCqOxn-sFCCOa1koOaDwQumiD8I0h70G-c",
@@ -39,40 +45,48 @@
         projectId: "d-and-d-campaign-hub",
         storageBucket: "d-and-d-campaign-hub.firebasestorage.app",
         messagingSenderId: "953951157532",
-        appId: "1:953951157532:web:5ec60c759ad8229ea6ced9",
-        measurementId: "G-10KMRSH0HV"
+        appId: "1:953951157532:web:5ec60c759ad8229ea6ced9"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Initial state
-    let player = { hp: 100, gold: 0, hour: 0 };
+    let p = { hp: 100, gold: 0, gems: 0, xp: 0, lvl: 1, hour: 0 };
 
-    async function saveGame() {
-        await set(ref(db, 'saveData'), player);
-    }
-
-    async function loadGame() {
-        const snapshot = await get(ref(db, 'saveData'));
-        if (snapshot.exists()) player = snapshot.val();
+    onValue(ref(db, 'player'), (snapshot) => {
+        if(snapshot.exists()) p = snapshot.val();
         render();
-    }
+    });
 
     function render() {
-        document.getElementById('p-stats').innerHTML = `HP: ${player.hp}<br>Gold: ${player.gold}`;
-        document.getElementById('hour-display').innerText = `Hour ${player.hour + 1}/48`;
+        document.getElementById('stats').innerHTML = `HP: ${p.hp} | Gold: ${p.gold} | Gems: ${p.gems} | Lvl: ${p.lvl}`;
+        document.getElementById('xp-bar').style.width = (p.xp % 100) + "%";
+        document.getElementById('hour-txt').innerText = `Hour ${p.hour + 1}/48`;
+        document.getElementById('story').innerText = `You are grinding the Abyss. The path ahead is dangerous.`;
+        
+        const c = document.getElementById('choices'); c.innerHTML = '';
+        ['Fight', 'Scout'].forEach(act => {
+            const b = document.createElement('button'); b.innerText = act;
+            b.onclick = () => advance(act);
+            c.appendChild(b);
+        });
     }
 
-    // Logic to increment hour and save
-    window.advance = async () => {
-        player.hour++;
-        player.gold += 10;
-        await saveGame();
-        render();
-    };
+    async function advance(act) {
+        p.xp += 20;
+        p.gold += 10;
+        if(p.xp >= p.lvl * 100) { p.lvl++; p.xp = 0; }
+        if(act === 'Fight') p.hp -= 5;
+        p.hour++;
+        await set(ref(db, 'player'), p);
+    }
 
-    loadGame();
+    window.shop = async (type) => { if(p.gold >= 50) { p.gold -= 50; p.hp += 20; await set(ref(db, 'player'), p); } };
+    window.buyGems = async () => { 
+        alert("Redirecting to payment..."); 
+        p.gems += 100; 
+        await set(ref(db, 'player'), p); 
+    };
 </script>
 </body>
 </html>
