@@ -2,37 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #111; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
-        #debug { position: absolute; top: 10px; right: 10px; color: yellow; background: rgba(0,0,0,0.5); padding: 5px; }
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        canvas { display: block; }
+        .ui { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; }
+        .joy { width: 100px; height: 100px; border: 3px solid #00ffcc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #00ffcc; }
+        .btn { width: 80px; height: 80px; border: 3px solid #ff0066; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
-    <div id="debug">System: Loading...</div>
-    <canvas id="canvas"></canvas>
-    <!-- Keep your controls from before here -->
+    <canvas id="c"></canvas>
+    <div class="ui">
+        <div id="joy" class="joy">JOY</div>
+        <div style="display:flex; gap: 20px;">
+            <div class="btn" ontouchstart="jump()">JUMP</div>
+            <div class="btn" ontouchstart="shoot()" style="border-color:#00ffcc;">FIRE</div>
+        </div>
+    </div>
 
 <script>
-    const canvas = document.getElementById('canvas');
+    const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    const debug = document.getElementById('debug');
-    let x = 100; // Let's keep it simple: just draw a moving box
+    const p = { x: 100, y: 300, vx: 0, vy: 0, crouch: false, facing: 1 };
+    let bullets = [];
+
+    // Simple Joystick logic
+    const joy = document.getElementById('joy');
+    joy.ontouchmove = (e) => {
+        let touch = e.touches[0];
+        let rect = joy.getBoundingClientRect();
+        let dx = touch.clientX - (rect.left + 50);
+        let dy = touch.clientY - (rect.top + 50);
+        
+        p.vx = dx / 10;
+        p.facing = dx > 0 ? 1 : -1;
+        p.crouch = dy > 30;
+    };
+    joy.ontouchend = () => { p.vx = 0; p.crouch = false; };
+
+    function jump() { if(p.y > 250) p.vy = -12; }
+    function shoot() { bullets.push({ x: p.x, y: p.y, dir: p.facing }); }
 
     function loop() {
-        // Test: Draw a moving red box
-        x += 2;
-        if (x > canvas.width) x = 0;
+        // Physics
+        p.vy += 0.8; 
+        p.y += p.vy;
+        if(p.y > 300) { p.y = 300; p.vy = 0; }
+        p.x = Math.max(20, Math.min(canvas.width - 20, p.x + p.vx));
 
+        // Draw
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = 'red';
-        ctx.fillRect(x, 100, 50, 50);
+        ctx.fillStyle = p.crouch ? '#ff0066' : '#00ffcc';
+        ctx.fillRect(p.x, p.y, 40, p.crouch ? 40 : 80);
 
-        debug.innerText = "System: LOOP ACTIVE | Pos: " + Math.floor(x);
+        bullets.forEach((b, i) => {
+            b.x += b.dir * 10;
+            ctx.fillStyle = 'yellow';
+            ctx.fillRect(b.x, b.y, 10, 5);
+        });
+
         requestAnimationFrame(loop);
     }
     loop();
