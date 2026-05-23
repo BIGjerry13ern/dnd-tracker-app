@@ -2,92 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OAKHAVEN | The Hustle</title>
     <style>
-        body { margin: 0; background: #050505; color: #00ffcc; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
-        #hud { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.8); padding: 15px; border: 1px solid #00ffcc; }
-        .controls { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 20px; }
-        .btn { width: 70px; height: 70px; background: rgba(0,255,204,0.1); border: 1px solid #00ffcc; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        #story-ticker { position: absolute; bottom: 100px; width: 100%; text-align: center; color: #ff0066; font-weight: bold; }
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
+        canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #00ffcc; font-family: 'Courier New', monospace; font-size: 20px; pointer-events: none; }
+        .controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; }
+        .btn { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #00ffcc; display: flex; align-items: center; justify-content: center; color: white; background: rgba(0,255,204,0.1); font-family: sans-serif; }
     </style>
 </head>
 <body>
 
 <div id="hud">
-    <div id="stats">PHASE: 1 | CASH: $0 | BRICKS: 0/12 | HEAT: 0</div>
-    <div id="status">Status: Working for Boss Jax...</div>
+    <div id="info">PHASE 1 | CASH: $0 | BRICKS: 0/12</div>
 </div>
 
-<div id="story-ticker">KEEP MOVING. CORPORATE DRONES DETECTED.</div>
-
-<canvas id="game"></canvas>
+<canvas id="canvas"></canvas>
 
 <div class="controls">
-    <span class="btn" ontouchstart="keys['a']=true" ontouchend="keys['a']=false">◀</span>
-    <span class="btn" ontouchstart="keys['d']=true" ontouchend="keys['d']=false">▶</span>
-    <span class="btn" ontouchstart="shoot()" ontouchend="keys[' ']=false">FIRE</span>
+    <div style="display:flex; gap: 20px;">
+        <div class="btn" ontouchstart="keys.left=true" ontouchend="keys.left=false">◀</div>
+        <div class="btn" ontouchstart="keys.right=true" ontouchend="keys.right=false">▶</div>
+    </div>
+    <div class="btn" ontouchstart="shoot()" ontouchend="keys.fire=false">FIRE</div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-    const db = getDatabase(initializeApp({
-        apiKey: "AIzaSyCqOxn-sFCCOa1koOaDwQumiD8I0h70G-c",
-        databaseURL: "https://d-and-d-campaign-hub-default-rtdb.firebaseio.com",
-        projectId: "d-and-d-campaign-hub"
-    }));
-
-    const canvas = document.getElementById('game');
+<script>
+    const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let p = { x: 100, y: 300, phase: 1, cash: 0, bricks: 0, heat: 0 };
-    let bullets = [], enemies = [];
-    window.keys = {};
+    // Assets
+    const hero = new Image(); hero.src = 'hero_spritesheet.png';
+    const bg = new Image(); bg.src = 'city_bg.png';
 
-    onValue(ref(db, 'player'), (s) => { if(s.exists()) p = s.val(); });
+    // Game Logic
+    const keys = { left: false, right: false, fire: false };
+    const player = { x: 100, y: 400, frame: 0, frameCount: 0, speed: 6 };
+    let bullets = [];
 
-    function shoot() { bullets.push({x: p.x + 40, y: p.y + 20, vx: 15}); }
-    window.shoot = shoot;
+    function shoot() {
+        bullets.push({ x: player.x + 30, y: player.y + 10, vx: 20 });
+    }
 
-    function loop() {
-        if(keys['d']) p.x += 7;
-        if(keys['a']) p.x -= 7;
+    function update() {
+        if(keys.left) player.x -= player.speed;
+        if(keys.right) player.x += player.speed;
 
-        // Difficulty Scaling (The 75hr Grind)
-        if(Math.random() < (0.01 + (p.phase * 0.005))) {
-            enemies.push({x: canvas.width, y: 300, hp: 20 * p.phase});
+        // Animate based on movement
+        if(keys.left || keys.right) {
+            player.frameCount++;
+            if(player.frameCount % 8 === 0) player.frame = (player.frame + 1) % 4;
+        } else {
+            player.frame = 0;
         }
-
-        ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#00ffcc'; ctx.fillRect(p.x, p.y, 40, 60);
 
         bullets.forEach((b, i) => {
             b.x += b.vx;
-            ctx.fillStyle = 'yellow'; ctx.fillRect(b.x, b.y, 10, 5);
-            enemies.forEach((en, ei) => {
-                if(b.x > en.x && b.x < en.x+40) {
-                    en.hp -= 10;
-                    bullets.splice(i, 1);
-                    if(en.hp <= 0) { 
-                        enemies.splice(ei, 1); 
-                        p.cash += (10 * p.phase);
-                        p.bricks += 0.1; // Slow progress
-                        if(p.bricks >= 12) { p.bricks = 0; p.phase++; p.heat++; }
-                        set(ref(db, 'player'), p); 
-                    }
-                }
-            });
+            if(b.x > canvas.width) bullets.splice(i, 1);
         });
-
-        enemies.forEach(en => { en.x -= (3 + p.phase); ctx.fillStyle = '#ff0066'; ctx.fillRect(en.x, en.y, 40, 60); });
-
-        document.getElementById('stats').innerText = `PHASE: ${Math.floor(p.phase)} | CASH: $${Math.floor(p.cash)} | BRICKS: ${Math.floor(p.bricks)}/12 | HEAT: ${p.heat}`;
-        requestAnimationFrame(loop);
     }
-    loop();
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw Background
+        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+        // Determine Sprite Row: Idle=0, Run=1, Shoot=2
+        const row = keys.fire ? 2 : (keys.left || keys.right ? 1 : 0);
+        
+        // Draw Player Sprite (Assumes 32x32 frames)
+        ctx.drawImage(hero, player.frame * 32, row * 32, 32, 32, player.x, player.y, 96, 96);
+
+        // Draw Bullets
+        ctx.fillStyle = '#ffcc00';
+        bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 5));
+
+        update();
+        requestAnimationFrame(draw);
+    }
+
+    // Input Listeners
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'ArrowLeft') keys.left = true;
+        if(e.key === 'ArrowRight') keys.right = true;
+        if(e.key === ' ') shoot();
+    });
+    window.addEventListener('keyup', (e) => {
+        if(e.key === 'ArrowLeft') keys.left = false;
+        if(e.key === 'ArrowRight') keys.right = false;
+    });
+
+    draw();
 </script>
 </body>
 </html>
