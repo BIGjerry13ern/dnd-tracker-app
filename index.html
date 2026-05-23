@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OAKHAVEN | The Hustle</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
-        #hud { position: absolute; top: 20px; left: 20px; color: #00ffcc; font-family: 'Courier New', monospace; font-size: 20px; pointer-events: none; }
-        .controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; }
-        .btn { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #00ffcc; display: flex; align-items: center; justify-content: center; color: white; background: rgba(0,255,204,0.1); font-family: sans-serif; }
+        canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; width: 100vw; height: 100vh; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #00ffcc; font-family: 'Courier New', monospace; font-size: 20px; pointer-events: none; z-index: 10; }
+        .controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; z-index: 20; }
+        .btn { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #00ffcc; display: flex; align-items: center; justify-content: center; color: white; background: rgba(0,255,204,0.1); font-family: sans-serif; cursor: pointer; user-select: none; }
     </style>
 </head>
 <body>
@@ -30,26 +31,27 @@
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // Assets
+    // Assets: Ensure these filenames match your local files EXACTLY
     const hero = new Image(); hero.src = 'hero_spritesheet.png';
     const bg = new Image(); bg.src = 'city_bg.png';
 
-    // Game Logic
     const keys = { left: false, right: false, fire: false };
     const player = { x: 100, y: 400, frame: 0, frameCount: 0, speed: 6 };
     let bullets = [];
 
     function shoot() {
+        keys.fire = true;
         bullets.push({ x: player.x + 30, y: player.y + 10, vx: 20 });
+        setTimeout(() => keys.fire = false, 200); // Visual trigger duration
     }
 
     function update() {
         if(keys.left) player.x -= player.speed;
         if(keys.right) player.x += player.speed;
 
-        // Animate based on movement
         if(keys.left || keys.right) {
             player.frameCount++;
             if(player.frameCount % 8 === 0) player.frame = (player.frame + 1) % 4;
@@ -66,16 +68,24 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Draw Background
-        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+        // 1. Draw Background (Safety check: draw grey if image missing)
+        if (bg.complete && bg.naturalWidth !== 0) {
+            ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
 
-        // Determine Sprite Row: Idle=0, Run=1, Shoot=2
-        const row = keys.fire ? 2 : (keys.left || keys.right ? 1 : 0);
-        
-        // Draw Player Sprite (Assumes 32x32 frames)
-        ctx.drawImage(hero, player.frame * 32, row * 32, 32, 32, player.x, player.y, 96, 96);
+        // 2. Draw Player (Safety check: draw green block if sprite missing)
+        if (hero.complete && hero.naturalWidth !== 0) {
+            const row = keys.fire ? 2 : (keys.left || keys.right ? 1 : 0);
+            ctx.drawImage(hero, player.frame * 32, row * 32, 32, 32, player.x, player.y, 96, 96);
+        } else {
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillRect(player.x, player.y, 60, 60);
+        }
 
-        // Draw Bullets
+        // 3. Draw Bullets
         ctx.fillStyle = '#ffcc00';
         bullets.forEach(b => ctx.fillRect(b.x, b.y, 15, 5));
 
@@ -83,7 +93,7 @@
         requestAnimationFrame(draw);
     }
 
-    // Input Listeners
+    // Keyboard support
     window.addEventListener('keydown', (e) => {
         if(e.key === 'ArrowLeft') keys.left = true;
         if(e.key === 'ArrowRight') keys.right = true;
